@@ -90,4 +90,5 @@ def buy_menu(isUrl=True, url='', bill=''):
 
     btn_check_qiwi = InlineKeyboardButton(text='Проверить оплату', callback_data='check_' + bill)
     qiwiMenu.insert(btn_check_qiwi)
+    qiwiMenu.insert(InlineKeyboardButton(text='Дай без оплаты!', callback_data='without_money'))
     return qiwiMenu

@@ -51,7 +51,7 @@ def check_sub_channel(chat_member):
 async def start_message(message: types.Message):
     if message.chat.type == 'private':
         if not check_sub_channel(await bot.get_chat_member(chat_id=config.CHANNEL_ID, user_id=message.from_user.id)):
-            await bot.send_message(message.from_user.id, 'Где твоя подписка, вац?', reply_markup=markups.check_sub_menu)
+            await bot.send_message(message.from_user.id, 'Сначала подпишись!', reply_markup=markups.check_sub_menu)
             return
     strogage_status[message.from_user.id] = None
     db_sess = db_session.create_session()
@@ -68,7 +68,7 @@ async def sub_channel_done(message: types.Message):
     if check_sub_channel(await bot.get_chat_member(chat_id=config.CHANNEL_ID, user_id=message.from_user.id)):
         await register_user(message, db_session.create_session())
     else:
-        await bot.send_message(message.from_user.id, 'Где твоя подписка, вац?', reply_markup=markups.check_sub_menu)
+        await bot.send_message(message.from_user.id, 'Сначала подпишись!', reply_markup=markups.check_sub_menu)
 
 
 async def register_user(message: types.Message, db_sess):
@@ -125,7 +125,8 @@ async def lesson_callback(call: types.CallbackQuery):
     db_sess = db_session.create_session()
     lesson = db_sess.query(Lesson).filter(Lesson.lesson_title == datas[0]).first()
     if lesson:
-        with open(lesson.img_path, 'rb') as photo:
+        img_path = lesson.img_path if lesson.img_path else 'img/none.png'
+        with open(img_path, 'rb') as photo:
             await bot.send_photo(call.message.chat.id,
                                  photo=photo,
                                  caption=f'{datas[0].capitalize()} >> Онлайн Школа\n\n'
@@ -149,12 +150,14 @@ async def school_callback(call: types.CallbackQuery):
     db_sess = db_session.create_session()
     school = db_sess.query(School).filter(School.school_title == datas[1]).first()
 
-    with open(school.img_path, 'rb') as photo:
+    img_path = school.img_path if school.img_path else 'img/none.png'
+
+    with open(img_path, 'rb') as photo:
         await bot.send_photo(call.from_user.id,
-                             photo=photo,
-                             caption=f"{datas[0].capitalize()} >> {datas[1].capitalize()} >> Месяц\n\n"
-                                     f"Отлично, теперь выбери месяц, который хочешь получить",
-                             reply_markup=choose_months_menu)
+                            photo=photo,
+                            caption=f"{datas[0].capitalize()} >> {datas[1].capitalize()} >> Месяц\n\n"
+                                    f"Отлично, теперь выбери месяц, который хочешь получить",
+                            reply_markup=choose_months_menu)
 
 
 @dp.callback_query_handler(text_contains='month')
@@ -169,10 +172,12 @@ async def month_callback(call: types.CallbackQuery):
                                             Channel.month_title == datas[0]).first()
     strogage_for_channel[call.from_user.id] = channel
 
-    with open(channel.schedule_img_path, 'rb') as photo:
+    img_path = channel.schedule_img_path if channel.schedule_img_path else 'img/none.png'
+
+    with open(img_path, 'rb') as photo:
         await bot.send_photo(call.message.chat.id,
                              photo=photo,
-                             caption="Октябрь! Ты уверен?",
+                             caption="Ты уверен?",
                              reply_markup=markups.month_pay_menu)
 
 
@@ -203,6 +208,12 @@ async def pay_handler(call: types.CallbackQuery):
     #                        prices=[PRICE],
     #                        start_parameter="one-month-subscription",
     #                        payload="test-invoice-payload")
+
+
+@dp.callback_query_handler(text_contains='without_money')
+async def without_money(callback: types.CallbackQuery):
+    await bot.send_message(callback.from_user.id, 'щас')
+    await successful_payment(callback)
 
 
 @dp.callback_query_handler(text_contains='check_')
